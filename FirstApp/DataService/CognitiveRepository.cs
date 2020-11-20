@@ -2,37 +2,50 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Azure.Search.Documents;
+using Azure.Search.Documents.Indexes;
 using FirstApp.Model;
+using Microsoft.Azure.Search;
 
 namespace FirstApp
 {
     public class CognitiveRepository:ICognitiveRepository
     { 
         private readonly SearchClient _searchClient;
-        public CognitiveRepository(SearchClient searchClient)
+        private readonly SearchServiceClient _searchServiceClient;
+        public CognitiveRepository(SearchClient searchClient, SearchServiceClient searchServiceClient)
         {
             _searchClient = searchClient;
+            _searchServiceClient = searchServiceClient;
         }
 
         public async Task<List<CustomerIndexModel>> GetCongnitiveSearchCustomers(Customer customer)
         {
-            var filterList = new List<string>();
-
-            filterList.Add($"FirstName eq '{customer.FirstName}'");
-
-            var searchOptions = new SearchOptions
+            try
             {
-                Filter = string.Join(" and ", filterList),
-                IncludeTotalCount = false,
-                Size = 10,
-                Skip = 0
-            };
+                var filterList = new List<string>();
 
-            var searchResults = await _searchClient.SearchAsync<CustomerIndexModel>(string.Empty, searchOptions);
-            var documentList = searchResults.Value.GetResults()
-                .Select(item => item.Document)
-                .ToList();
-            return documentList;
+                filterList.Add($"FirstName eq '{customer.FirstName}'");
+
+                var searchOptions = new SearchOptions
+                {
+                    Filter = string.Join(" and ", filterList),
+                    IncludeTotalCount = false,
+                    Size = 10,
+                    Skip = 0
+                };
+
+                //var searchr = _searchServiceClient.
+                //_searchServiceClient.SetRetryPolicy
+                var searchResults = await _searchClient.SearchAsync<CustomerIndexModel>(string.Empty, searchOptions);
+                var documentList = searchResults.Value.GetResults()
+                    .Select(item => item.Document)
+                    .ToList();
+                return documentList;
+            }
+            catch (System.Exception ex)
+            {
+                throw ex;
+            }
         }
          
     }

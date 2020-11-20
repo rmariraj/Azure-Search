@@ -34,20 +34,31 @@ namespace FirstApp
 
             services.AddControllers();
 
-            services.AddDbContext<SalesLTContext>(s => s.UseSqlServer(Configuration.GetValue<string>("customerDbConnection")
-                //, options => options.ExecutionStrategy(d => new AzureRetryPolicy(new )))); 
-                , sqlServerOptionsAction: sqlOptions =>
-                 {
-                     sqlOptions.EnableRetryOnFailure(maxRetryCount: Configuration.GetValue<int>("maxRetryCount"),
-                      maxRetryDelay: TimeSpan.FromSeconds(Configuration.GetValue<int>("maxRetryDelay")),
-                      errorNumbersToAdd: null);
-                 }));
+            //services.AddScoped(AzureRetryPolicy, SalesLTContext);
 
+            services.AddDbContext<SalesLTContext>(s => s.UseSqlServer(Configuration.GetValue<string>("customerDbConnection")
+                //,sqlServerOptionsAction: sqlOptions =>
+                //{
+                //    sqlOptions.EnableRetryOnFailure(
+                //    maxRetryCount: 10,
+                //    maxRetryDelay: TimeSpan.FromSeconds(30),
+                //    errorNumbersToAdd: null);
+                //}));
+                , sqlServerOptionsAction: sqlOptions =>
+                {
+                    sqlOptions.ExecutionStrategy(dependencies =>
+                        new CustomRetryPolicy(
+                        dependencies,
+                        Configuration.GetValue<int>("maxRetryCount"),
+                        TimeSpan.FromSeconds(Configuration.GetValue<int>("maxRetryDelay"))));
+                }));
             services.AddSwaggerDocument();
 
             services.AddCognitiveSearchClient(Configuration);
-        }
 
+            //services.AddApplicationInsightsTelemetry(Configuration);
+
+        }
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
